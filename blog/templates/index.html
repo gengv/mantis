@@ -1,0 +1,61 @@
+{% extends "layout.html" %}
+
+{% block main_content %}
+<div class="col-md-8">
+
+	<ol class="breadcrumb">
+		<li><a href="#">所有文章</a></li>
+		<li class="active">分类{{catalog_name}}</li>
+	</ol>
+	
+	{% for _a in articles %}
+	<div>
+		<h4>
+			<a href="{{ url_for('.view_article', _article_id=_a.id) }}">
+				{{_a.title}}
+			</a>
+		</h4>
+		<p>
+			{{_a.digest}}
+		</p>
+		<div>发表于{{_a.published_datetime|strftime}}</div>
+	</div>
+	{% endfor %}
+
+	<div class="">
+		<ul class="pagination">
+			{% if current_page_no==1 %}
+				<li class="disabled">
+					<a href="#">上一页</a>
+				</li>
+			{% else %}
+				<li>
+					<a href="{{ prefix_url }}/p/{{current_page_no-1}}">上一页</a>
+				</li>
+			{% endif %}
+			
+			{% for _i in range(max_page_no) %}
+				{% if _i+1==current_page_no %}
+					<li class="active">
+						<a>{{_i+1}}</a>
+					</li>
+				{% else %}
+					<li>
+						<a href="{{ prefix_url }}/p/{{_i+1}}">{{_i+1}}</a>
+					</li>
+				{% endif %}
+			{% endfor %}
+			
+			{% if current_page_no==max_page_no %}
+				<li class="disabled">
+					<a href="#">下一页</a>
+				</li>
+			{% else %}
+				<li>
+					<a href="{{ prefix_url }}/p/{{current_page_no+1}}">下一页</a>
+				</li>
+			{% endif %}
+		</ul>
+	</div>
+</div>
+{% endblock %}
