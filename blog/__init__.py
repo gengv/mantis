@@ -20,25 +20,61 @@ def index():
 
 @mod.route('/b/<int:_author_id>', defaults={'_page_no': 1})
 @mod.route('/b/<int:_author_id>/p/<int:_page_no>')
+@template(name='index.html')
 def list_articles_by_author(_author_id, _page_no):
-    return _list_articles(_author_id=_author_id, _page_no=_page_no)
+    _size_per_page = 5
+    
+    # 查询文章数量
+    _count_of_articles = _count_articles(_author_id)
+    # 计算最大页数
+    _max_page_no = int(math.ceil((1.0*_count_of_articles/_size_per_page)))
+    # 如果当前页超过最大页数，则使用最大页数
+    if _page_no > _max_page_no: _page_no = _max_page_no
+    # 计算查询的偏移量
+    _offset = (_page_no-1) * _size_per_page
+    
+    # 查询实体对象
+    _catalogs = _list_catalogs(_author_id)
+    _articles = _list_articles_basic(_author_id=_author_id, _offset=_offset, _size=_size_per_page)
+    
+    return {
+            'articles': _articles, 
+            'catalogs':_catalogs, 
+            'current_page_no':_page_no,
+            'max_page_no': _max_page_no,
+            'prefix_url': _remove_page_from_url(request.base_url)
+            }
+    
 
 @mod.route('/b/<int:_author_id>/c/<int:_catalog_id>', defaults={'_page_no': 1})
 @mod.route('/b/<int:_author_id>/c/<int:_catalog_id>/p/<int:_page_no>')
-def list_articles_by_author_and_category(_author_id, _catalog_id, _page_no):
-    return _list_articles(_author_id=_author_id, _catalog_id=_catalog_id, _page_no=_page_no)
-
 @template(name='index.html')
-def _list_articles(_author_id, _catalog_id=None, _page_no=1):
-    _count_of_articles = count_articles(_author_id, _catalog_id)
+def list_articles_by_author_and_category(_author_id, _catalog_id, _page_no):
     _size_per_page = 5
+    
+    # 查询文章数量
+    _count_of_articles = _count_articles(_author_id, _catalog_id)
+    # 计算最大页数
     _max_page_no = int(math.ceil((1.0*_count_of_articles/_size_per_page)))
-    
+    # 如果当前页超过最大页数，则使用最大页数
     if _page_no > _max_page_no: _page_no = _max_page_no
-    
+    # 计算查询的偏移量
     _offset = (_page_no-1) * _size_per_page
     
+    # 查询实体对象
+    _catalogs = _list_catalogs(_author_id)
+    _articles = _list_articles_basic(_author_id=_author_id, _catalog_id=_catalog_id, _offset=_offset, _size=_size_per_page)
     
+    return {
+            'articles': _articles, 
+            'catalogs':_catalogs, 
+            'current_page_no':_page_no,
+            'max_page_no': _max_page_no,
+            'prefix_url': _remove_page_from_url(request.base_url)
+            }
+
+
+def _list_articles_basic(_author_id, _catalog_id=None, _offset=1, _size=10):
     with get_scoped_db_session(False) as _dbss:
         _query = _dbss.query(Article).join(Article.catalogs)\
                                      .filter(Article.author_id==_author_id)
@@ -49,24 +85,12 @@ def _list_articles(_author_id, _catalog_id=None, _page_no=1):
                                          
         else:
             _query = _dbss.query(Article).filter_by(author_id=_author_id)
-        
-        _articles = _query.order_by(Article.published_datetime)[_offset:_offset+_size_per_page]
-    
-    _catalogs = list_catalogs(_author_id)
-    
-    
-    print 'script_root:', request.base_url
+            
+        _articles = _query.order_by(Article.published_datetime)[_offset:_offset+_size]
+        return _articles
     
     
-    return {
-            'articles': _articles, 
-            'catalogs':_catalogs, 
-            'current_page_no':_page_no,
-            'max_page_no': _max_page_no,
-            'prefix_url': remove_page_from_url(request.base_url)
-            }
-    
-def remove_page_from_url(_url):
+def _remove_page_from_url(_url):
     _p = re.compile(r'(.*)/p/\d*$')
     _m = re.match(_p, _url)
     
@@ -84,7 +108,7 @@ def view_article(_article_id):
                                                 joinedload(Article.author),
                                                 joinedload(Article.keywords)).get(_article_id)
                                                 
-        _catalogs = list_catalogs(_article.author_id)
+        _catalogs = _list_catalogs(_article.author_id)
                                                 
     return {'article': _article, 'catalogs': _catalogs}
 
@@ -133,14 +157,13 @@ def create_reply():
                 "published_datetime": _reply.published_datetime}
     
 
-def list_catalogs(_owner_id):
+def _list_catalogs(_owner_id):
     with get_scoped_db_session(False) as _dbss:
         _catalogs = _dbss.query(ArticleCatalog).filter_by(owner_id=_owner_id).all()
-        
-    return _catalogs
+        return _catalogs
 
 
-def count_articles(_author_id, _catalog_id):
+def _count_articles(_author_id, _catalog_id=None):
     with get_scoped_db_session(False) as _dbss:
         _query = _dbss.query(func.count(Article.id))\
                                      
@@ -153,3 +176,13 @@ def count_articles(_author_id, _catalog_id):
         _count = _query.scalar()
             
         return _count
+    
+    
+def _count_replies_by_articles(_article_ids):
+    if _article_ids is None:
+        _article_ids = []
+    
+    with get_scoped_db_session(False) as _dbss:
+        _result_set = _dbss.query(ArticleReply.article_id, func.count(ArticleReply.id)).filter(ArticleReply.article_id.in_(_article_ids)).group_by(ArticleReply.article_id).all()
+        
+        return _result_set

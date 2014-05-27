@@ -6,7 +6,7 @@ from sqlalchemy.ext.declarative.api import declarative_base
 from sqlalchemy.orm.scoping import scoped_session
 from sqlalchemy.orm.session import sessionmaker
 
-engine = create_engine("mysql://gengv:@localhost/mantis", echo=True)
+engine = create_engine("mysql://gengv:nkc0ma@localhost/mantis", echo=True)
 db_session = scoped_session(sessionmaker(autocommit=False,
                                          autoflush=False,
                                          bind=engine))
