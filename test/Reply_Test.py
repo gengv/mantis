@@ -106,7 +106,7 @@ if __name__ == '__main__':
 #     _test_delete_article()
 
 #     _test_list_article()
-    for i in range(500):
+    for i in range(2000):
         _a = test_create_reply()
 #     _d = sa_obj_to_dict([_a])
 #     print _d

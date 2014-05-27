@@ -18,6 +18,7 @@ mod = Blueprint('blog', __name__, static_folder='static', template_folder='templ
 def index():
     return {}
 
+
 @mod.route('/b/<int:_author_id>', defaults={'_page_no': 1})
 @mod.route('/b/<int:_author_id>/p/<int:_page_no>')
 @template(name='index.html')
@@ -36,6 +37,11 @@ def list_articles_by_author(_author_id, _page_no):
     # 查询实体对象
     _catalogs = _list_catalogs(_author_id)
     _articles = _list_articles_basic(_author_id=_author_id, _offset=_offset, _size=_size_per_page)
+    
+    # 查询文章的Reply数
+    _reply_counts = _count_replies_by_articles([_a.id for _a in _articles])
+    for _a in _articles:
+        _a.reply_count = _reply_counts[_a.id]
     
     return {
             'articles': _articles, 
@@ -64,6 +70,11 @@ def list_articles_by_author_and_category(_author_id, _catalog_id, _page_no):
     # 查询实体对象
     _catalogs = _list_catalogs(_author_id)
     _articles = _list_articles_basic(_author_id=_author_id, _catalog_id=_catalog_id, _offset=_offset, _size=_size_per_page)
+    
+    # 查询文章的Reply数
+    _reply_counts = _count_replies_by_articles([_a.id for _a in _articles])
+    for _a in _articles:
+        _a.reply_count = _reply_counts[_a.id]
     
     return {
             'articles': _articles, 
@@ -183,6 +194,8 @@ def _count_replies_by_articles(_article_ids):
         _article_ids = []
     
     with get_scoped_db_session(False) as _dbss:
-        _result_set = _dbss.query(ArticleReply.article_id, func.count(ArticleReply.id)).filter(ArticleReply.article_id.in_(_article_ids)).group_by(ArticleReply.article_id).all()
+        _result_set = _dbss.query(ArticleReply.article_id, func.count(ArticleReply.id))\
+                           .filter(ArticleReply.article_id.in_(_article_ids))\
+                           .group_by(ArticleReply.article_id).all()
         
-        return _result_set
+        return dict(_result_set)

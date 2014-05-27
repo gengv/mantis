@@ -18,7 +18,10 @@
 		<p>
 			{{_a.digest}}
 		</p>
-		<div>发表于{{_a.published_datetime|strftime}}</div>
+		<div>
+			<span>发表于{{_a.published_datetime}}</span>
+			<span>评论[{{_a.reply_count}}]</span>
+		</div>
 	</div>
 	{% endfor %}
 
