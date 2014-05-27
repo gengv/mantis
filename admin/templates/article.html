@@ -1,0 +1,139 @@
+{% extends "layout.html" %}
+
+{% block main_content %}
+<div class="col-md-8">
+	<link rel="stylesheet" href="{{url_for('.static', filename='article.css')}}">
+
+	<ol class="breadcrumb">
+		<li><a href="#">所有文章</a></li>
+		<li class="active">分类{{catalog_name}}</li>
+	</ol>
+	
+	<h3 class="gv-article-title">
+		{{article.title}}
+	</h3>
+	
+	<div class="row">
+		<div class="col-md-5 gv-article-publish-datetime">
+			发布于 {{article.published_datetime}}
+		</div>
+		<div class="col-md-7">
+			{% for _k in article.keywords %}
+				{{_k}}
+			{% endfor %}
+		</div>
+	</div>
+	
+	<div class="gv-article-content">
+		{{article.content.content}}
+	</div>
+	
+	<div class="gv-article-last-modified-datetime">
+		最后修改于 {{article.last_modified_datetime}}
+	</div>
+	
+	<div class="gv-article-replies-container">
+		<div class="gv-article-reply template">
+			<div class="hidden gv-reply-id"></div>
+			<div class="media">
+				<a class="pull-left" href="#"> 
+					<img class="media-object gv-reply-author-icon" src="..." alt="..." />
+				</a>
+				<div class="media-body">
+					<div>
+						<span class="gv-reply-author-name"></span>
+						<span class="gv-reply-published-datetime"></span>
+					</div>
+					<div class="gv-reply-content"></div>
+				</div>
+			</div>
+		</div>
+	</div>
+	
+	<button type="button" class="btn btn-default gv-load-replies-button">点击载入更早之前的回复</button>
+	
+	<div class="gv-submit-reply-panel">
+		<textarea class="form-control gv-submit-reply-content" rows="3"></textarea><br/>
+		<button type="button" class="btn btn-default gv-submit-reply-button">发标评论</button>
+	</div>
+	
+	<script>
+		function load_replies(ref_datetime, ref_id) {
+			var args = null;
+			if(ref_datetime && ref_id) {
+				args = {
+						"_ref_datetime": ref_datetime,
+						"_ref_id": ref_id
+						};
+			}
+			
+			$.getJSON("{{url_for('.list_replies_by_article', _article_id=article.id)}}", args, 
+					function(data) {
+						var replies_container= $(".gv-article-replies-container");
+						for(var i=0; i<data.length; i++) {
+							var _r = data[i];
+							var new_reply = $(".gv-article-reply.template").clone().removeClass("template");
+							new_reply.find(".gv-reply-id").text(_r['ArticleReply']['id']);
+							new_reply.find(".gv-reply-author-name").text(_r['author_name']);
+							new_reply.find(".gv-reply-published-datetime").text(_r['ArticleReply']['published_datetime']);
+							new_reply.find(".gv-reply-content").text(_r['ArticleReply']['content']);
+							new_reply.find(".gv-reply-author-icon").attr("alt", _r['author_id']);
+							replies_container.append(new_reply);
+						}
+					});
+		}
+		
+		function submit_reply() {
+			var content = $(".gv-submit-reply-content").val().trim();
+			var args = {
+				"_article_id": {{ article.id }},
+				"_content": content
+			};
+			
+			$.post("{{url_for('.create_reply')}}", args,
+					function(data) {
+						var replies_container= $(".gv-article-replies-container");
+						if(data) {
+							var r_id = data["reply_id"];
+							
+							var new_reply = $(".gv-article-reply.template").clone().removeClass("template");
+							new_reply.find(".gv-reply-id").text(data["reply_id"]);
+							new_reply.find(".gv-reply-author-name").text("我");
+							new_reply.find(".gv-reply-published-datetime").text(data["published_datetime"]);
+							new_reply.find(".gv-reply-content").text(content);
+							//new_reply.find(".gv-reply-author-icon").attr("alt", _r['author_id']);
+							replies_container.prepend(new_reply);
+							
+							$(".gv-submit-reply-content").val("");
+						}
+					}, "json");
+		}
+		
+		$(function() {
+			$(".gv-load-replies-button").click(function() {
+				var last_reply_on_page = $(".gv-article-replies-container .gv-article-reply").last();
+				
+				var ref_datetime = last_reply_on_page.find(".gv-reply-published-datetime").text().trim();
+				var ref_id = last_reply_on_page.find(".gv-reply-id").text().trim();
+				
+				load_replies(ref_datetime, ref_id);
+			});
+			
+			$(".gv-submit-reply-button").click(function() {
+				submit_reply();
+			});
+			
+			$(window).load(function() {			
+				load_replies();
+			});
+			
+			
+			
+		});
+	
+		
+		
+		
+	</script>
+</div>
+{% endblock %}

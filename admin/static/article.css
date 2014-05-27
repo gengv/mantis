@@ -1,0 +1,26 @@
+
+.gv-article-title {
+	margin-bottom: 50px;
+}
+
+.gv-article-publish-datetime,
+.gv-article-last-modified-datetime {
+	font-size: 12px;
+	color: #999999;
+}
+
+.gv-article-content {
+	margin: 20px 0 50px;
+	word-break: break-all;
+}
+
+
+.gv-article-reply.template {
+	display: none;
+}
+
+.gv-article-reply .gv-reply-published-datetime {
+	margin-left: 20px;
+	font-size: 12px;
+	color: #999999;
+}

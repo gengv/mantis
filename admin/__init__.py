@@ -2,34 +2,110 @@
 
 from contextlib import contextmanager
 from database import db_session, get_scoped_db_session
+from flask import request, session, redirect, url_for
 from flask.blueprints import Blueprint
-from flask.globals import request
 from intercepter import template
 from model import ArticleCatalog, Article, ArticleContent, \
     association_table_catalog_article, ArticleReply
 from sqlalchemy.orm import joinedload, load_only
+from sqlalchemy.sql.functions import func
 import datetime
+import math
+import re
 
 mod = Blueprint('admin', __name__, static_folder='static', template_folder='templates')
 
 
-@mod.route('/article_list/<int:_author_id>/', defaults={'_catalog_id': 0})
-@mod.route('/article_list/<int:_author_id>/<int:_catalog_id>')
-@template()
-def list_articles(_author_id, _catalog_id):
-    with get_scoped_db_session(False) as _dbss:
-        if _catalog_id:
-            _articles = _dbss.query(Article).join(Article.catalogs)\
-                                            .filter(Article.author_id==_author_id)\
-                                            .filter(ArticleCatalog.id==_catalog_id).all()  # @UndefinedVariable
-        else:
-            _articles = _dbss.query(Article).options(joinedload(Article.catalogs))\
-                                            .filter_by(author_id=_author_id).all()
+@mod.route('/article_list/', defaults={'_catalog_id': 0})
+@mod.route('/article_list/<int:_catalog_id>')
+@template('article_list.html')
+def list_articles(_catalog_id, _page_no):
+    _author_id = _get_current_user_id()
     
-    return _articles
+    _size_per_page = 10
+    
+    # 查询文章数量
+    _count_of_articles = _count_articles(_author_id, _catalog_id)
+    # 计算最大页数
+    _max_page_no = int(math.ceil((1.0*_count_of_articles/_size_per_page)))
+    # 如果当前页超过最大页数，则使用最大页数
+    if _page_no > _max_page_no: _page_no = _max_page_no
+    # 计算查询的偏移量
+    _offset = (_page_no-1) * _size_per_page
+    
+    # 查询实体对象
+    _catalogs = _list_catalogs(_author_id)
+    _articles = _list_articles_basic(_author_id=_author_id, _catalog_id=_catalog_id, _offset=_offset, _size=_size_per_page)
+    
+    # 查询文章的Reply数
+    _reply_counts = _count_replies_by_articles([_a.id for _a in _articles])
+    for _a in _articles:
+        _a.reply_count = _reply_counts[_a.id]
+    
+    return {
+            'articles': _articles, 
+            'catalogs':_catalogs, 
+            'current_page_no':_page_no,
+            'max_page_no': _max_page_no,
+            'prefix_url': _remove_page_from_url(request.base_url)
+            }
+    
+    
+def _count_articles(_author_id, _catalog_id=None):
+    with get_scoped_db_session(False) as _dbss:
+        _query = _dbss.query(func.count(Article.id))\
+                                     
+        if _catalog_id:
+            _query = _query.join(Article.catalogs).filter(Article.author_id==_author_id)\
+                                                  .filter(ArticleCatalog.id==_catalog_id)
+        else:
+            _query = _query.filter(Article.author_id==_author_id)
+            
+        _count = _query.scalar()
+            
+        return _count
+    
+
+def _list_articles_basic(_author_id, _catalog_id=None, _offset=1, _size=10):
+    with get_scoped_db_session(False) as _dbss:
+        _query = _dbss.query(Article).join(Article.catalogs)\
+                                     .filter(Article.author_id==_author_id)
+        if _catalog_id:
+            _query = _dbss.query(Article).join(Article.catalogs)\
+                                         .filter(Article.author_id==_author_id)\
+                                         .filter(ArticleCatalog.id==_catalog_id)
+                                         
+        else:
+            _query = _dbss.query(Article).filter_by(author_id=_author_id)
+            
+        _articles = _query.order_by(Article.published_datetime)[_offset:_offset+_size]
+        return _articles
+    
+    
+def _count_replies_by_articles(_article_ids):
+    if _article_ids is None:
+        _article_ids = []
+    
+    with get_scoped_db_session(False) as _dbss:
+        _result_set = _dbss.query(ArticleReply.article_id, func.count(ArticleReply.id))\
+                           .filter(ArticleReply.article_id.in_(_article_ids))\
+                           .group_by(ArticleReply.article_id).all()
+        
+        return dict(_result_set)
+    
+
+def _remove_page_from_url(_url):
+    _p = re.compile(r'(.*)/p/\d*$')
+    _m = re.match(_p, _url)
+    
+    if _m:
+        return _m.group(1)
+    else:
+        return _url
 
 
 @mod.route('/article/new/', methods=['POST'])
+@template()
 def create_article():
     _title, _author_id, _digest, _content, _catalogs = \
         request.form['title'], \
@@ -56,11 +132,48 @@ def create_article():
                                                                              'article_id': _new_article.id,
                                                                              }))
         
-    return 'Article created [%s][%s]' % (_new_article.id, _new_article.title)
+        return _new_article
+    
+    
+@mod.route('/article/view/<int:_article_id>')
+@template(name='article.html')
+def view_article(_article_id):
+    _article = _read_article(_article_id)
+    
+    _author_id = _get_current_user_id()
+    _catalogs = _list_catalogs(_author_id)
+                                                
+    return {'article': _article, 'catalogs': _catalogs}
+
 
 @mod.route('/article/edit/', methods=['POST'])
+@template(name='article_edit.html')
 def edit_article():
-    _id, _title, _author_id, _digest, _content, _catalogs = \
+    _article_id = request.form['article_id']
+    
+    _article = _read_article(_article_id)
+    
+    _author_id = _get_current_user_id()
+    _catalogs = _list_catalogs(_author_id)
+                                                
+    return {'article': _article, 'catalogs': _catalogs}
+
+
+def _read_article(_article_id):
+    with get_scoped_db_session(False) as _dbss:
+        _article = _dbss.query(Article).options(joinedload(Article.content),
+                                                joinedload(Article.author),
+                                                joinedload(Article.catalogs),
+                                                joinedload(Article.keywords)).get(_article_id)
+                                                
+        return _article
+    
+
+@mod.route('/article/save/', methods=['POST'])
+def save_article():
+    _author_id = _get_current_user_id()
+    
+    _id, _title, _digest, _content, _catalogs = \
         request.form['id'], \
         request.form['title'], \
         request.form['author_id'], \
@@ -87,10 +200,11 @@ def edit_article():
             
             
     
-    return 'Article updated [%s][%s]' % (_article.id, _article.title)
+        return redirect(url_for('.view_article', _article_id=_id))
 
 
 @mod.route('/article/remove/', methods=['POST'])
+@template()
 def remove_article():
     _id = request.form['id']
     
@@ -101,6 +215,7 @@ def remove_article():
 
 
 @mod.route('/article/remove_batch/', methods=['POST'])
+@template()
 def remove_article_batch():
     _ids = request.form.getlist('id')
     
@@ -112,6 +227,7 @@ def remove_article_batch():
 
 
 @mod.route('/article/delete/', methods=['POST'])
+@template()
 def delete_article():
     _id = request.form['id']
 
@@ -124,6 +240,7 @@ def delete_article():
 
 
 @mod.route('/reply/delete/', methods=['POST'])
+@template()
 def delete_reply():
     _reply_id = request.form['id']
     
@@ -133,7 +250,14 @@ def delete_reply():
     return 'Reply deleted [%s]' % _reply_id
 
 
+def _list_catalogs(_owner_id):
+    with get_scoped_db_session(False) as _dbss:
+        _catalogs = _dbss.query(ArticleCatalog).filter_by(owner_id=_owner_id).all()
+        return _catalogs
+    
+
 @mod.route('/catalog/new/', methods=['POST', 'GET'])
+@template()
 def create_catalog():
     if request.method == 'POST':
         _name = request.form['name']
@@ -149,6 +273,7 @@ def create_catalog():
 
 
 @mod.route('/catalog/new/', methods=['POST', 'GET'])
+@template()
 def edit_catalog():
     if request.method == 'POST':
         _id, _name = request.form['id'], request.form['name']
@@ -162,6 +287,7 @@ def edit_catalog():
 
 
 @mod.route('/catalog/delete/', methods=['POST', 'GET'])
+@template()
 def delete_catalog():
     if request.method == 'POST':
         _id = request.form['id']
@@ -176,3 +302,5 @@ def delete_catalog():
     return 'ArticleCatalog deleted [%s]' % (_id, )
 
 
+def _get_current_user_id():
+    return -1
