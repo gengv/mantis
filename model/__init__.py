@@ -8,6 +8,7 @@ from sqlalchemy.sql.sqltypes import Integer, String, Text, DateTime
 
 class TableNameConst(object):
     USER = 'user'
+    ROLE = 'role'
     ARTICLE = 'article'
     ARTICLE_CONTENT = 'article_content'
     ARTICLE_CATALOG = 'article_catalog'
@@ -16,7 +17,15 @@ class TableNameConst(object):
     
     ASSOCIATION_CATALOG_ARTICLE = 'asso_catalog_article'
     ASSOCIATION_ARTICLE_KEYWORD = 'asso_article_keyword'
+    ASSOCIATION_USER_ROLE = 'asso_user_role'
+    
 
+class Role(Base):
+    __tablename__ = TableNameConst.ROLE
+    
+    id = Column(Integer, primary_key=True)
+    name = Column(String(50), nullable=False)
+    
 
 class User(Base):
     __tablename__ = TableNameConst.USER
@@ -25,6 +34,15 @@ class User(Base):
     name = Column(String(50), nullable=False)
     email = deferred(Column(String(300), nullable=False))
     avatar = Column(String(300))
+    
+    roles = relationship(Role, secondary=TableNameConst.ASSOCIATION_USER_ROLE, backref='users')
+    
+    
+association_table_user_role = \
+    Table(TableNameConst.ASSOCIATION_USER_ROLE, Base.metadata,
+          Column('user_id', Integer, ForeignKey('%s.id' % TableNameConst.USER)),
+          Column('role_id', Integer, ForeignKey('%s.id' % TableNameConst.ROLE)),
+          mysql_engine='InnoDB')
     
     
 class ArticleCatalog(Base):
