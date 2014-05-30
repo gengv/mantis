@@ -32,6 +32,7 @@ class User(Base):
     
     id = Column(Integer, primary_key=True)
     name = Column(String(50), nullable=False)
+    passcode = deferred(Column(String(32), nullable=False))
     email = deferred(Column(String(300), nullable=False))
     avatar = Column(String(300))
     

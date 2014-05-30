@@ -37,7 +37,7 @@
 			<div class="hidden gv-reply-id"></div>
 			<div class="media">
 				<a class="pull-left" href="#"> 
-					<img class="media-object gv-reply-author-icon" src="..." alt="..." />
+					<img class="media-object gv-reply-author-avatar" src="" alt="" />
 				</a>
 				<div class="media-body">
 					<div>
@@ -53,8 +53,12 @@
 	<button type="button" class="btn btn-default gv-load-replies-button">点击载入更早之前的回复</button>
 	
 	<div class="gv-submit-reply-panel">
-		<textarea class="form-control gv-submit-reply-content" rows="3"></textarea><br/>
-		<button type="button" class="btn btn-default gv-submit-reply-button">发标评论</button>
+		{% if session._user %}
+			<textarea class="form-control gv-submit-reply-content" rows="3"></textarea><br/>
+			<button type="button" class="btn btn-default gv-submit-reply-button">发表评论</button>
+		{% else %}
+			<a href="{{url_for('security.login_form')}}">请先登录，再发表评论</a>
+		{% endif %}
 	</div>
 	
 	<script>
@@ -77,7 +81,7 @@
 							new_reply.find(".gv-reply-author-name").text(_r['author_name']);
 							new_reply.find(".gv-reply-published-datetime").text(_r['ArticleReply']['published_datetime']);
 							new_reply.find(".gv-reply-content").text(_r['ArticleReply']['content']);
-							new_reply.find(".gv-reply-author-icon").attr("alt", _r['author_id']);
+							new_reply.find(".gv-reply-author-avatar").attr("src", _r['avatar']).attr("alt", _r['author_id']);
 							replies_container.append(new_reply);
 						}
 					});

@@ -1,9 +1,10 @@
 # coding: utf-8
 from database import get_scoped_db_session
 from flask.blueprints import Blueprint
-from flask.globals import request
+from flask.globals import request, session
 from intercepter import template
 from model import Article, ArticleCatalog, ArticleReply, User
+from security.permissions import normal_user_permission
 from sqlalchemy.orm import joinedload
 from sqlalchemy.sql.expression import desc
 from sqlalchemy.sql.functions import func
@@ -131,7 +132,10 @@ def list_replies_by_article(_article_id):
     _ref_id = request.args.get('_ref_id')
     
     with get_scoped_db_session(False) as _dbss:
-        _query = _dbss.query(ArticleReply, User.id.label('author_id'), User.name.label('author_name'))\
+        _query = _dbss.query(ArticleReply, 
+                             User.id.label('author_id'), 
+                             User.name.label('author_name'),
+                             User.avatar.label('avatar'))\
                       .outerjoin(ArticleReply.author)\
                       .filter(ArticleReply.article_id==_article_id)
         
@@ -146,9 +150,11 @@ def list_replies_by_article(_article_id):
 
 
 @mod.route('/add_article_reply/', methods=['POST'])
+@normal_user_permission.require()
 @template()
 def create_reply():
-    _author_id = 1
+    _author_id = session['_user']['id']
+    
     _article_id = request.form['_article_id']
     if _article_id: _article_id = int(_article_id)
        
