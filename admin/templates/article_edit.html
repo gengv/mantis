@@ -1,0 +1,47 @@
+{% extends "layout.html" %}
+
+{% block main_content %}
+<div class="col-md-8">
+	<link rel="stylesheet" href="{{url_for('.static', filename='article.css')}}">
+
+	<ol class="breadcrumb">
+		<li><a href="#">所有文章</a></li>
+		<li class="active">分类{{catalog_name}}</li>
+	</ol>
+	
+	<form action="{{url_for('.save_article')}}" role="form">
+		<input type="hidden" name="id" value="{{article.id}}"/>
+	
+		<div class="form-group">
+			<label for="inputTitle" class="control-label">标题</label>
+			<input type="text" id="inputTitle" name="title" value="{{article.title}}" class="form-control"/>
+		</div>
+		
+		<div class="form-group">
+			<label for="inputEmail3" class="control-label">分类</label>
+			
+			<div>
+			{% for _c in catalog_list %}
+				<label class="checkbox-inline">
+					<input type="checkbox" name="catalog_id" value="{{_c.id}}"
+					{% if _c.id in article_catalogs %}
+						checked="checked"
+					{% endif %} />
+					{{_c.name}}
+				</label>
+			{% endfor %}
+			</div>
+			
+		</div>
+		
+		<div class="form-group">
+			<label for="inputEmail3" class="control-label">内容</label>
+			<textarea rows="20" cols="60" class="form-control">
+				{{article.content.content}}
+			</textarea>
+		</div>
+	</form>
+		
+	
+</div>
+{% endblock %}

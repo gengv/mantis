@@ -146,17 +146,17 @@ def view_article(_article_id):
     return {'article': _article, 'catalogs': _catalogs}
 
 
-@mod.route('/article/edit/', methods=['POST'])
+@mod.route('/article/edit/<int:_article_id>')
 @template(name='article_edit.html')
-def edit_article():
-    _article_id = request.form['article_id']
-    
+def edit_article(_article_id):
     _article = _read_article(_article_id)
     
     _author_id = _get_current_user_id()
     _catalogs = _list_catalogs(_author_id)
                                                 
-    return {'article': _article, 'catalogs': _catalogs}
+    return {'article': _article, 
+            'article_catalogs': [_ac.id for _ac in _article.catalogs], 
+            'catalog_list': _catalogs}
 
 
 def _read_article(_article_id):
@@ -176,7 +176,6 @@ def save_article():
     _id, _title, _digest, _content, _catalogs = \
         request.form['id'], \
         request.form['title'], \
-        request.form['author_id'], \
         request.form['digest'], \
         request.form['content'], \
         request.form.getlist['catalog_id']
@@ -303,4 +302,7 @@ def delete_catalog():
 
 
 def _get_current_user_id():
-    return -1
+    if session['_user']:
+        return session['_user']['id']
+    else:
+        return None
