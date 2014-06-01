@@ -9,15 +9,19 @@
 		<li class="active">分类{{catalog_name}}</li>
 	</ol>
 	
+	{% if editable %}
+		<a href="{{url_for('admin.edit_article', _article_id=article.id)}}">编辑</a>
+	{% endif %}
+	
 	<h3 class="gv-article-title">
 		{{article.title}}
 	</h3>
 	
 	<div class="row">
-		<div class="col-md-5 gv-article-publish-datetime">
+		<div class="col-md-3 gv-article-publish-datetime">
 			发布于 {{article.published_datetime}}
 		</div>
-		<div class="col-md-7">
+		<div class="col-md-6">
 			{% for _k in article.keywords %}
 				{{_k}}
 			{% endfor %}
@@ -43,6 +47,9 @@
 					<div>
 						<span class="gv-reply-author-name"></span>
 						<span class="gv-reply-published-datetime"></span>
+						{% if editable %}
+							<button type="button" class="btn btn-link gv-reply-delete-button">删除评论</button>
+						{% endif %}
 					</div>
 					<div class="gv-reply-content"></div>
 				</div>
@@ -113,7 +120,32 @@
 					}, "json");
 		}
 		
+		function delete_reply(reply_block) {
+			var reply_id = $.trim(reply_block.find(".gv-reply-id").text());	
+			
+			$.post("{{url_for('admin.delete_reply')}}", 
+					{"reply_id": reply_id},
+					function(data) {
+						if(data && data[0]) {
+							reply_block.empty().remove();
+						}
+					},
+					"json"
+					);
+		}
+		
 		$(function() {
+			$(".gv-article-replies-container").click(function(event) {
+				var obj = $(event.target);
+				
+				if(obj.is(".gv-reply-delete-button")) {
+					var reply_block = obj.parents(".gv-article-reply");
+					if(reply_block) {
+						delete_reply(reply_block);
+					}
+				}
+			});
+			
 			$(".gv-load-replies-button").click(function() {
 				var last_reply_on_page = $(".gv-article-replies-container .gv-article-reply").last();
 				

@@ -47,3 +47,10 @@ def logout():
 @template('login_form.html')
 def login_form():
     return {}
+
+
+def _get_current_user_id():
+    if session['_user']:
+        return session['_user']['id']
+    else:
+        return None

@@ -6,8 +6,11 @@ from flask import request, session, redirect, url_for
 from flask.blueprints import Blueprint
 from intercepter import template
 from model import ArticleCatalog, Article, ArticleContent, \
-    association_table_catalog_article, ArticleReply
+    association_table_catalog_article, ArticleReply, User
+from security import _get_current_user_id
+from security.permissions import normal_user_permission
 from sqlalchemy.orm import joinedload, load_only
+from sqlalchemy.sql.expression import desc
 from sqlalchemy.sql.functions import func
 import datetime
 import math
@@ -104,35 +107,14 @@ def _remove_page_from_url(_url):
         return _url
 
 
-@mod.route('/article/new/', methods=['POST'])
-@template()
+@mod.route('/article/new/')
+@normal_user_permission.require()
+@template(name='article_edit.html')
 def create_article():
-    _title, _author_id, _digest, _content, _catalogs = \
-        request.form['title'], \
-        request.form['author_id'], \
-        request.form['digest'], \
-        request.form['content'], \
-        request.form.getlist['catalog_id']
-        
-    _now = datetime.datetime.now()
-    _new_article = Article(title=_title, 
-                           author_id=_author_id,
-                           digest=_digest,
-                           content=ArticleContent(_content),
-                           published_datetime=_now,
-                           last_modified_datetime=_now)
+    _author_id = _get_current_user_id()
+    _catalogs = _list_catalogs(_author_id)
     
-    with get_scoped_db_session() as _dbss:
-        _dbss.add(_new_article)
-        _dbss.flush()
-        
-        for _cid in _catalogs:
-            _dbss.execute(association_table_catalog_article.insert().values({
-                                                                             'catalog_id': _cid,
-                                                                             'article_id': _new_article.id,
-                                                                             }))
-        
-        return _new_article
+    return {'catalog_list': _catalogs}
     
     
 @mod.route('/article/view/<int:_article_id>')
@@ -147,6 +129,7 @@ def view_article(_article_id):
 
 
 @mod.route('/article/edit/<int:_article_id>')
+@normal_user_permission.require()
 @template(name='article_edit.html')
 def edit_article(_article_id):
     _article = _read_article(_article_id)
@@ -170,36 +153,51 @@ def _read_article(_article_id):
     
 
 @mod.route('/article/save/', methods=['POST'])
+@normal_user_permission.require()
+@template()
 def save_article():
     _author_id = _get_current_user_id()
     
     _id, _title, _digest, _content, _catalogs = \
-        request.form['id'], \
-        request.form['title'], \
-        request.form['digest'], \
-        request.form['content'], \
-        request.form.getlist['catalog_id']
+        request.form.get('id'), \
+        request.form.get('title'), \
+        request.form.get('digest'), \
+        request.form.get('content'), \
+        request.form.getlist('catalog_id')
+        
+    _now = datetime.datetime.now()
         
     with get_scoped_db_session() as _dbss:
-        _article = _dbss.query(Article).options(load_only(Article.id)).filter_by(id=_id).one()
+        if not _id:
+            _article = Article()
+            _article.published_datetime = _now
+            _article.content = ArticleContent()
+            
+        else:
+            _id = int(_id)
+            _article = _dbss.query(Article).options(load_only(Article.id)).filter_by(id=_id, author_id=_author_id).one()
+             
         _article.title = _title
+        _article.author_id = _author_id
         _article.digest = _digest,
         _article.content.content = _content,
-        _article.last_modified_datetime = datetime.datetime.now()
-        
-        _dbss.flush()
-        
-        _dbss.execute(association_table_catalog_article.delete()\
-                                                       .where(association_table_catalog_article.c.article_id==_id))  # @UndefinedVariable
+        _article.last_modified_datetime = _now
+         
+        if not _id:
+            _dbss.add(_article)
+            _dbss.flush()
+        else:
+            _dbss.execute(association_table_catalog_article.delete()\
+                                                           .where(association_table_catalog_article.c.article_id==_article.id))  # @UndefinedVariable
+             
         for _cid in _catalogs:
+            _cid = int(_cid)
             _dbss.execute(association_table_catalog_article.insert().values({
                                                                              'catalog_id': _cid,
-                                                                             'article_id': _id,
+                                                                             'article_id': _article.id,
                                                                              }))
-            
-            
     
-        return redirect(url_for('.view_article', _article_id=_id))
+        return [True, _article.id]
 
 
 @mod.route('/article/remove/', methods=['POST'])
@@ -241,12 +239,15 @@ def delete_article():
 @mod.route('/reply/delete/', methods=['POST'])
 @template()
 def delete_reply():
-    _reply_id = request.form['id']
+    _reply_id = request.form['reply_id']
     
-    with get_scoped_db_session() as _dbss:
-        _dbss.query(ArticleReply).filter_by(id=_reply_id).delete()
+    with get_scoped_db_session(False) as _dbss:
+        _article_author_id = _dbss.query(Article.author_id).join(ArticleReply).filter(ArticleReply.id==_reply_id).scalar()
         
-    return 'Reply deleted [%s]' % _reply_id
+        if _article_author_id == _get_current_user_id():
+            _dbss.query(ArticleReply).filter_by(id=_reply_id).delete()
+        
+            return [True, _reply_id]
 
 
 def _list_catalogs(_owner_id):
@@ -301,8 +302,3 @@ def delete_catalog():
     return 'ArticleCatalog deleted [%s]' % (_id, )
 
 
-def _get_current_user_id():
-    if session['_user']:
-        return session['_user']['id']
-    else:
-        return None

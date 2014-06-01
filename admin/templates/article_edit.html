@@ -6,15 +6,21 @@
 
 	<ol class="breadcrumb">
 		<li><a href="#">所有文章</a></li>
-		<li class="active">分类{{catalog_name}}</li>
+		<li class="active">
+			{% if article %}
+				编辑文章
+			{% else %}
+				创建文章
+			{% endif %}
+		</li>
 	</ol>
 	
-	<form action="{{url_for('.save_article')}}" role="form">
-		<input type="hidden" name="id" value="{{article.id}}"/>
+	<form action="{{url_for('.save_article')}}" method="post" role="form">
+		<input type="hidden" name="id" value="{% if article %}{{article.id}}{% endif %}"/>
 	
 		<div class="form-group">
 			<label for="inputTitle" class="control-label">标题</label>
-			<input type="text" id="inputTitle" name="title" value="{{article.title}}" class="form-control"/>
+			<input type="text" id="inputTitle" name="title" value="{% if article %}{{article.title}}{% endif %}" class="form-control"/>
 		</div>
 		
 		<div class="form-group">
@@ -24,7 +30,7 @@
 			{% for _c in catalog_list %}
 				<label class="checkbox-inline">
 					<input type="checkbox" name="catalog_id" value="{{_c.id}}"
-					{% if _c.id in article_catalogs %}
+					{% if article_catalogs and _c.id in article_catalogs %}
 						checked="checked"
 					{% endif %} />
 					{{_c.name}}
@@ -36,10 +42,12 @@
 		
 		<div class="form-group">
 			<label for="inputEmail3" class="control-label">内容</label>
-			<textarea rows="20" cols="60" class="form-control">
-				{{article.content.content}}
+			<textarea name="content" rows="20" cols="60" class="form-control">
+				{% if article %}{{article.content.content}}{% endif %}
 			</textarea>
 		</div>
+		
+		<button type="submit" class="btn btn-primary">保存</button>
 	</form>
 		
 	

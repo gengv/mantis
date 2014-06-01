@@ -11,6 +11,7 @@ from sqlalchemy.sql.functions import func
 import datetime
 import math
 import re
+from security import _get_current_user_id
 
 mod = Blueprint('blog', __name__, static_folder='static', template_folder='templates')
 
@@ -122,7 +123,9 @@ def view_article(_article_id):
                                                 
         _catalogs = _list_catalogs(_article.author_id)
                                                 
-    return {'article': _article, 'catalogs': _catalogs}
+    return {'article': _article, 
+            'catalogs': _catalogs, 
+            'editable': _article.author_id == _get_current_user_id()}
 
 
 @mod.route('/article_reply/<int:_article_id>')
