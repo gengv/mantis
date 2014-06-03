@@ -50,7 +50,8 @@ def list_articles_by_author(_author_id, _page_no):
             'catalogs':_catalogs, 
             'current_page_no':_page_no,
             'max_page_no': _max_page_no,
-            'prefix_url': _remove_page_from_url(request.base_url)
+            'prefix_url': _remove_page_from_url(request.base_url),
+            'editable': _author_id == _get_current_user_id()
             }
     
 
@@ -83,7 +84,8 @@ def list_articles_by_author_and_category(_author_id, _catalog_id, _page_no):
             'catalogs':_catalogs, 
             'current_page_no':_page_no,
             'max_page_no': _max_page_no,
-            'prefix_url': _remove_page_from_url(request.base_url)
+            'prefix_url': _remove_page_from_url(request.base_url),
+            'editable': _author_id == _get_current_user_id()
             }
 
 

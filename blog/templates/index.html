@@ -2,6 +2,7 @@
 
 {% block main_content %}
 <div class="col-md-8">
+	<link rel="stylesheet" href="{{url_for('.static', filename='article-list.css')}}">
 
 	<ol class="breadcrumb">
 		<li><a href="#">所有文章</a></li>
@@ -9,7 +10,7 @@
 	</ol>
 	
 	{% for _a in articles %}
-	<div>
+	<div class="gv-article-block">
 		<h4>
 			<a href="{{ url_for('.view_article', _article_id=_a.id) }}">
 				{{_a.title}}
@@ -19,9 +20,23 @@
 			{{_a.digest}}
 		</p>
 		<div>
-			<span>发表于{{_a.published_datetime}}</span>
-			<span>评论[{{_a.reply_count}}]</span>
+			<span class="gv-article-publish-datetime">发表于{{_a.published_datetime}}</span>
+			<span class="gv-article-reply-count">
+				<a href="{{url_for('.view_article', _article_id=_a.id)}}#replies">评论({{_a.reply_count}})</a>
+			</span>
+			<span class="gv-article-view-link">
+				<a href="{{url_for('.view_article', _article_id=_a.id)}}">阅读全文</a>
+			</span>
+			
+			{% if editable %}
+				<div class="pull-right gv-article-control-buttons">
+					<button type="button" class="btn btn-link">编辑文章</button>
+					<button type="button" class="btn btn-link">删除文章</button>
+				</div>
+			{% endif %}
+			
 		</div>
+		
 	</div>
 	{% endfor %}
 

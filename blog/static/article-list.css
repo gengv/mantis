@@ -1,0 +1,32 @@
+
+.gv-article-block {
+	margin: 15px 0 45px;
+}
+
+.gv-article-title {
+	margin-bottom: 50px;
+}
+
+.gv-article-publish-datetime,
+.gv-article-last-modified-datetime {
+	font-size: 12px;
+	color: #999999;
+	margin-right: 10px;
+}
+
+.gv-article-reply-count,
+.gv-article-view-link {
+	font-size: 12px;
+	margin-right: 10px;
+}
+
+.gv-article-control-buttons .btn {
+	font-size: 12px;
+}
+
+.gv-article-content {
+	margin: 20px 0 50px;
+	word-break: break-all;
+}
+
+

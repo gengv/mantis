@@ -50,7 +50,7 @@ def login_form():
 
 
 def _get_current_user_id():
-    if session['_user']:
+    if session.has_key('_user'):
         return session['_user']['id']
     else:
         return None

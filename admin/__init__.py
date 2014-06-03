@@ -203,12 +203,20 @@ def save_article():
 @mod.route('/article/remove/', methods=['POST'])
 @template()
 def remove_article():
-    _id = request.form['id']
+    _article_id = request.form['article_id']
     
     with get_scoped_db_session() as _dbss:
-        _dbss.query(Article).filter_by(id=_id).update({'state': Article.HIDDEN})
+        # 检查当前用户是否为文章作者
+        _author_id = _dbss.query(Article.author_id).get(_article_id).scalar()
         
-    return 'Article removed [%s]' % _id
+        if _author_id == _get_current_user_id():
+            _dbss.query(Article).filter_by(id=_article_id).update({'state': Article.HIDDEN})
+            
+            return [True, _article_id]
+            
+        else:
+            return [False, 'Permission Denied! Article can only be removed by its author.']
+        
 
 
 @mod.route('/article/remove_batch/', methods=['POST'])
@@ -226,14 +234,24 @@ def remove_article_batch():
 @mod.route('/article/delete/', methods=['POST'])
 @template()
 def delete_article():
-    _id = request.form['id']
+    _article_id = request.form['article_id']
 
     with get_scoped_db_session() as _dbss:
-        _dbss.execute(association_table_catalog_article.delete()
-                                                       .where(association_table_catalog_article.c.article_id==_id))  # @UndefinedVariable
-        _dbss.query(Article).filter_by(id=_id).delete()
+        # 检查当前用户是否为文章作者
+        _author_id = _dbss.query(Article.author_id).get(_article_id).scalar()
+        
+        if _author_id == _get_current_user_id():
+            # 解除Article与Catalog之间的关联关系
+            _dbss.execute(association_table_catalog_article.delete()
+                                                           .where(association_table_catalog_article.c.article_id==_article_id))  # @UndefinedVariable
+            # 删除Article记录
+            _dbss.query(Article).filter_by(id=_article_id).delete()
+            
+            return [True, _article_id]
+            
+        else:
+            return [False, 'Permission Denied! Article can only be deleted by its author.']
     
-    return 'Article deleted [%s]' % _id
 
 
 @mod.route('/reply/delete/', methods=['POST'])
