@@ -9,36 +9,38 @@
 		<li class="active">分类{{catalog_name}}</li>
 	</ol>
 	
-	{% for _a in articles %}
-	<div class="gv-article-block">
-		<h4>
-			<a href="{{ url_for('.view_article', _article_id=_a.id) }}">
-				{{_a.title}}
-			</a>
-		</h4>
-		<p>
-			{{_a.digest}}
-		</p>
-		<div>
-			<span class="gv-article-publish-datetime">发表于{{_a.published_datetime}}</span>
-			<span class="gv-article-reply-count">
-				<a href="{{url_for('.view_article', _article_id=_a.id)}}#replies">评论({{_a.reply_count}})</a>
-			</span>
-			<span class="gv-article-view-link">
-				<a href="{{url_for('.view_article', _article_id=_a.id)}}">阅读全文</a>
-			</span>
-			
-			{% if editable %}
-				<div class="pull-right gv-article-control-buttons">
-					<button type="button" class="btn btn-link">编辑文章</button>
-					<button type="button" class="btn btn-link">删除文章</button>
-				</div>
-			{% endif %}
-			
+	<div class="gv-article-list">
+		{% for _a in articles %}
+		<div class="gv-article-block">
+			<h4>
+				<a href="{{ url_for('.view_article', _article_id=_a.id) }}">
+					{{_a.title}}
+				</a>
+			</h4>
+			<p>
+				{{_a.digest}}
+			</p>
+			<div>
+				<span class="gv-article-publish-datetime">发表于{{_a.published_datetime}}</span>
+				<span class="gv-article-reply-count">
+					<a href="{{url_for('.view_article', _article_id=_a.id)}}#replies">评论({{_a.reply_count}})</a>
+				</span>
+				<span class="gv-article-view-link">
+					<a href="{{url_for('.view_article', _article_id=_a.id)}}">阅读全文</a>
+				</span>
+				
+				{% if editable %}
+					<div class="pull-right gv-article-control-buttons">
+						<span class="hidden gv-article-id">{{_a.id}}</span>
+						<button type="button" class="btn btn-link gv-edit-article-button">编辑文章</button>
+						<button type="button" class="btn btn-link gv-delete-article-button">删除文章</button>
+					</div>
+				{% endif %}
+				
+			</div>
 		</div>
-		
+		{% endfor %}
 	</div>
-	{% endfor %}
 
 	<div class="">
 		<ul class="pagination">
@@ -75,5 +77,34 @@
 			{% endif %}
 		</ul>
 	</div>
+	
+	<script>
+		$(function() { 
+			$(".gv-article-list").on("click", ".gv-article-control-buttons button", function(event) {
+				var article_id = $(this).siblings(".gv-article-id").text().trim();
+				var button = $(this);
+				
+				if(button.is(".gv-edit-article-button")) {
+					window.location.href = "/admin/article/edit/" + article_id;
+					
+				} else if(button.is(".gv-delete-article-button")) {
+					if(window.confirm("确定要删除这篇文章？")) {
+						$.post("{{url_for('admin.delete_article')}}",
+								{"article_id": article_id},
+								function(data) {
+									if(data[0]) {
+										var block = button.parents(".gv-article-block");
+										block.fadeOut(500, function() {$(this).remove()});
+									} else {
+										alert(data[1]);
+									}
+								},
+								"json");
+					}
+				}
+			});
+			
+		});
+	</script>
 </div>
 {% endblock %}

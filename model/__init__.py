@@ -82,7 +82,7 @@ class ArticleReply(Base):
     author_id = Column(Integer, ForeignKey(User.id))
     author = relationship(User, backref=backref('replies', order_by=id))
     
-    article_id = Column(Integer, ForeignKey('%s.id' % TableNameConst.ARTICLE))
+    article_id = Column(Integer, ForeignKey('%s.id' % TableNameConst.ARTICLE, ondelete='CASCADE'))
     
     
 association_table_catalog_article = \
@@ -113,7 +113,7 @@ class Article(Base, ArticleEnum):
     
     content = relationship(ArticleContent, uselist=False, cascade='all, delete, delete-orphan')
     
-    replies = relationship(ArticleReply, order_by=ArticleReply.published_datetime)
+    replies = relationship(ArticleReply, order_by=ArticleReply.published_datetime, cascade_backrefs='all, delete-orphan', backref='article')
     
     catalogs = relationship(ArticleCatalog, secondary=association_table_catalog_article,
                             backref='articles')
