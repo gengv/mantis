@@ -15,14 +15,9 @@ from security import _get_current_user_id
 
 mod = Blueprint('blog', __name__, static_folder='static', template_folder='templates')
 
-# @mod.route('/', methods=['POST', 'GET'])
-@template(name='index.html')
-def index():
-    return {}
 
-
-@mod.route('/b/<int:_author_id>', defaults={'_page_no': 1})
-@mod.route('/b/<int:_author_id>/p/<int:_page_no>')
+@mod.route('/blog/<int:_author_id>', defaults={'_page_no': 1})
+@mod.route('/blog/<int:_author_id>/p/<int:_page_no>')
 @template(name='index.html')
 def list_articles_by_author(_author_id, _page_no):
     _size_per_page = 5
@@ -43,20 +38,21 @@ def list_articles_by_author(_author_id, _page_no):
     # 查询文章的Reply数
     _reply_counts = _count_replies_by_articles([_a.id for _a in _articles])
     for _a in _articles:
-        _a.reply_count = _reply_counts[_a.id]
+        _a.reply_count = _reply_counts.get(_a.id, 0)
     
     return {
+            'author_id': _author_id,
             'articles': _articles, 
             'catalogs':_catalogs, 
             'current_page_no':_page_no,
             'max_page_no': _max_page_no,
             'prefix_url': _remove_page_from_url(request.base_url),
-            'editable': _author_id == _get_current_user_id()
+            'editable': _author_id == _get_current_user_id(),
             }
     
 
-@mod.route('/b/<int:_author_id>/c/<int:_catalog_id>', defaults={'_page_no': 1})
-@mod.route('/b/<int:_author_id>/c/<int:_catalog_id>/p/<int:_page_no>')
+@mod.route('/blog/<int:_author_id>/c/<int:_catalog_id>', defaults={'_page_no': 1})
+@mod.route('/blog/<int:_author_id>/c/<int:_catalog_id>/p/<int:_page_no>')
 @template(name='index.html')
 def list_articles_by_author_and_category(_author_id, _catalog_id, _page_no):
     _size_per_page = 5
@@ -77,15 +73,16 @@ def list_articles_by_author_and_category(_author_id, _catalog_id, _page_no):
     # 查询文章的Reply数
     _reply_counts = _count_replies_by_articles([_a.id for _a in _articles])
     for _a in _articles:
-        _a.reply_count = _reply_counts[_a.id]
+        _a.reply_count = _reply_counts.get(_a.id, 0)
     
     return {
+            'author_id': _author_id,
             'articles': _articles, 
             'catalogs':_catalogs, 
             'current_page_no':_page_no,
             'max_page_no': _max_page_no,
             'prefix_url': _remove_page_from_url(request.base_url),
-            'editable': _author_id == _get_current_user_id()
+            'editable': _author_id == _get_current_user_id(),
             }
 
 
@@ -125,12 +122,13 @@ def view_article(_article_id):
                                                 
         _catalogs = _list_catalogs(_article.author_id)
                                                 
-    return {'article': _article, 
+    return {'author_id': _article.author_id,
+            'article': _article, 
             'catalogs': _catalogs, 
             'editable': _article.author_id == _get_current_user_id()}
 
 
-@mod.route('/article_reply/<int:_article_id>')
+@mod.route('/article_reply/list/<int:_article_id>')
 @template()
 def list_replies_by_article(_article_id):
     _ref_datetime = request.args.get('_ref_datetime')
@@ -151,10 +149,10 @@ def list_replies_by_article(_article_id):
         _replies = _query.order_by(desc(ArticleReply.published_datetime), \
                                    desc(ArticleReply.id))[0:2]
     
-    return _replies
+        return _replies
 
 
-@mod.route('/add_article_reply/', methods=['POST'])
+@mod.route('/article_reply/new/', methods=['POST'])
 @normal_user_permission.require()
 @template()
 def create_reply():
@@ -169,14 +167,13 @@ def create_reply():
     _reply.author_id = _author_id
     _reply.published_datetime = datetime.datetime.now()
        
-    print _article_id, _reply.content, _reply.published_datetime
-       
     with get_scoped_db_session() as _dbss:
         _dbss.add(_reply)
         _dbss.flush()
            
-        return {'reply_id': _reply.id, 
-                "published_datetime": _reply.published_datetime}
+        return {'_result': True,
+                'reply_id': _reply.id, 
+                'published_datetime': _reply.published_datetime}
     
 
 def _list_catalogs(_owner_id):

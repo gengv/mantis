@@ -126,8 +126,10 @@
 			$.post("{{url_for('admin.delete_reply')}}", 
 					{"reply_id": reply_id},
 					function(data) {
-						if(data && data[0]) {
+						if(data["_result"]) {
 							reply_block.empty().remove();
+						} else {
+							alert(data["error_message"]);
 						}
 					},
 					"json"

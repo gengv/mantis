@@ -92,11 +92,11 @@
 						$.post("{{url_for('admin.delete_article')}}",
 								{"article_id": article_id},
 								function(data) {
-									if(data[0]) {
+									if(data["_result"]) {
 										var block = button.parents(".gv-article-block");
 										block.fadeOut(500, function() {$(this).remove()});
 									} else {
-										alert(data[1]);
+										alert(data["error_message"]);
 									}
 								},
 								"json");
