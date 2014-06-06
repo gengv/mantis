@@ -3,6 +3,7 @@
 
 {% block layout %}
 <div class="container">
+	<link rel="stylesheet" href="{{url_for('.static', filename='layout.css')}}">
 	
 	{% block header %}
 	<div class="row">
@@ -90,21 +91,186 @@
 		{% endblock %}
 		
 		{% block sidebar %}
-		<div class="col-md-4">
-			<ul class="nav nav-list">
+		<div class="col-md-3">
+			<ul class="nav nav-pills nav-stacked gv-catalog-list">
 				<li class="nav-header">
 					文章分类
 				</li>
-				<li class="active">
-					<a href="#">所有文章</a>
+				<li class="gv-catalog-block">
+					<a href="{{url_for('blog.list_articles_by_author', _author_id=author_id)}}">所有文章</a>
 				</li>
+				
+				<li class="hidden gv-catalog-template gv-catalog-block">
+					<span class="hidden gv-catalog-id"></span>
+					<a href=""></a>
+					<div class="gv-catalog-control-buttons">
+						<button class="btn btn-default btn-xs gv-edit-catalog-button">
+							<span class="glyphicon glyphicon-pencil"></span>
+						</button>
+						<button class="btn btn-default btn-xs gv-save-catalog-button">
+							<span class="glyphicon glyphicon-ok"></span>
+						</button>
+						<button class="btn btn-default btn-xs gv-cancel-catalog-button">
+							<span class="glyphicon glyphicon-remove"></span>
+						</button>
+						<button class="btn btn-default btn-xs gv-delete-catalog-button">
+							<span class="glyphicon glyphicon-trash"></span>
+						</button>
+					</div>
+				</li>
+				
 				{% for _c in catalogs %}
-				<li>
-					<a href="{{_c.id}}">{{_c.name}}</a>
+				<li class="gv-catalog-block">
+					<span class="hidden gv-catalog-id">{{_c.id}}</span>
+					<a href="{{url_for('blog.list_articles_by_author_and_category', _author_id=author_id, _catalog_id=_c.id)}}">{{_c.name}}</a>
+					
+					{% if editable %}
+					<div class="gv-catalog-control-buttons">
+						<button class="btn btn-default btn-xs gv-edit-catalog-button">
+							<span class="glyphicon glyphicon-pencil"></span>
+						</button>
+						<button class="btn btn-default btn-xs gv-save-catalog-button">
+							<span class="glyphicon glyphicon-ok"></span>
+						</button>
+						<button class="btn btn-default btn-xs gv-cancel-catalog-button">
+							<span class="glyphicon glyphicon-remove"></span>
+						</button>
+						<button class="btn btn-default btn-xs gv-delete-catalog-button">
+							<span class="glyphicon glyphicon-trash"></span>
+						</button>
+					</div>
+					{% endif %}
 				</li>
 				{% endfor %}
+				
+				{% if editable %}
+				<li class="gv-catalog-controls">
+					<form action="{{url_for('admin.create_catalog')}}" method="post"
+						  class="form-inline gv-add-catalog-form" role="form">
+						<div class="form-group">
+							<input type="text" name="catalog_name" class="form-control" placeholder="新分类目录名" value=""/>
+						</div>
+						<button type="submit" class="btn btn-default">
+							<span class="glyphicon glyphicon-plus-sign"></span> 添加
+						</button>
+					</form>
+				</li>
+				
+				<script>
+					$(function() {
+						$(".gv-add-catalog-form").submit(function(event){
+							var form_obj = $(this);
+							
+							var input_obj = form_obj.find("input:text")
+							var catalog_name = input_obj.val().trim();
+							
+							if(catalog_name != "") {
+								$.post("{{url_for('admin.create_catalog')}}",
+										{"catalog_name": catalog_name},
+									   	function(data) {
+											if(data["_result"]) {
+												var new_catalog_obj = form_obj.parents(".gv-catalog-list").find(".gv-catalog-template").clone();
+												new_catalog_obj.removeClass("hidden gv-catalog-template");
+												
+												var new_catalog_id = data["new_catalog_id"]
+												
+												new_catalog_obj.find("a").attr("href", "{{url_for('blog.list_articles_by_author', _author_id=author_id)}}/c/" + new_catalog_id)
+																		 .text(catalog_name);
+												new_catalog_obj.find(".gv-catalog-id").text(new_catalog_id);
+												
+												new_catalog_obj.insertBefore(".gv-catalog-controls");
+												input_obj.val("");
+												
+											} else {
+												alert(data["error_message"]);
+											}
+										},
+									   	"json");
+							}
+							
+							event.preventDefault();
+						});
+						
+						$(".gv-catalog-list").on("click", ".gv-catalog-block button", function(event) {
+							var catalog_obj = $(this).parents("li");
+							var link_obj = catalog_obj.find("a");
+							var catalog_id = catalog_obj.find(".gv-catalog-id").text().trim();
+							var button = $(this);
+							var old_name = link_obj.text().trim();
+							
+							if(button.is(".gv-edit-catalog-button")) {
+								button.hide();
+								button.siblings(".gv-delete-catalog-button").hide();
+								button.siblings(".gv-save-catalog-button, .gv-cancel-catalog-button").show();
+								link_obj.hide();
+								
+								var input_html = "<input type=\"text\" name=\"catalog_name\" class=\"form-control\" placeholder=\"新分类目录名\" value=\"" + old_name + "\"/>";
+								
+								catalog_obj.prepend(input_html);
+								
+							} else if(button.is(".gv-save-catalog-button")) {
+								var input_obj = catalog_obj.find("input:text");
+								var new_name = input_obj.val().trim();
+								
+								if(new_name == old_name) {
+									input_obj.remove();
+									link_obj.show();
+									button.hide();
+									button.siblings(".gv-cancel-catalog-button").hide();
+									button.siblings(".gv-edit-catalog-button, .gv-delete-catalog-button").show();
+									
+								} else {
+									$.post("{{url_for('admin.edit_catalog')}}", 
+											{"catalog_id": catalog_id, "catalog_name": new_name},
+											function(data) {
+												if(data["_result"]) {
+													input_obj.remove();
+													link_obj.text(new_name).show();
+													button.hide();
+													button.siblings(".gv-cancel-catalog-button").hide();
+													button.siblings(".gv-edit-catalog-button, .gv-delete-catalog-button").show();
+												} else {
+													alert(data["error_message"]);
+												}
+											}, 
+											"json");
+								}
+								
+							} else if(button.is(".gv-cancel-catalog-button")) {
+								var input_obj = catalog_obj.find("input:text");
+								input_obj.remove();
+								link_obj.show();
+								button.hide();
+								button.siblings(".gv-save-catalog-button").hide();
+								button.siblings(".gv-edit-catalog-button, .gv-delete-catalog-button").show();
+								
+							} else if(button.is(".gv-delete-catalog-button")) {
+								if(window.confirm("确认要删除分类目录<" + link_obj.text().trim() + ">?")) {
+									$.post("{{url_for('admin.delete_catalog')}}", 
+											{"catalog_id": catalog_id}, 
+											function(data) {
+												if(data["_result"]) {
+													catalog_obj.empty().remove();
+												} else {
+													alert(data["error_message"]);
+												}
+											}, 
+											"json");
+								}
+							}
+							
+							event.stopPropagation();
+						});
+						
+					});
+				</script>
+				{% endif %}
+				
 				<li class="divider">
 				</li>
+			</ul>
+				
+			<ul class="nav nav-list">
 				<li class="nav-header">
 					最新文章
 				</li>
