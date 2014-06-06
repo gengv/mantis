@@ -1,0 +1,24 @@
+
+.gv-catalog-block .gv-catalog-control-buttons {
+	display: none;
+}
+
+.gv-catalog-block:hover .gv-catalog-control-buttons {
+	display: block;
+}
+
+.gv-catalog-block input {
+	height: 40px;
+	width: 290px;
+}
+
+.gv-catalog-control-buttons {
+	position: absolute;
+	right: 10px;
+	top: 10px;
+}
+
+.gv-catalog-control-buttons .gv-save-catalog-button,
+.gv-catalog-control-buttons .gv-cancel-catalog-button {
+	display: none;
+}

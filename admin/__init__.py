@@ -26,6 +26,11 @@ mod = Blueprint('admin', __name__, static_folder='static', template_folder='temp
 def handle_data_not_found_exception(e):
     return {'_result': False, 'error_message': e.message}
 
+@mod.errorhandler(InvalidOperationException)
+@template("error_page.html")
+def handle_invalid_operation_exception(e):
+    return {'_result': False, 'error_message': e.message}
+
 
 @mod.route('/article/new/')
 @normal_user_permission.require()
@@ -191,18 +196,20 @@ def _list_catalogs(_owner_id):
     
 
 @mod.route('/catalog/new/', methods=['POST'])
+@normal_user_permission.require()
 @template()
 def create_catalog():
     _name = request.form['catalog_name']
-    
-    _new_catalog = ArticleCatalog(name=_name)
+    _owner_id = _get_current_user_id()
     
     with get_scoped_db_session() as _dbss:
-        _count = _dbss.query(func.count(ArticleCatalog.id)).filter(ArticleCatalog.name==_name).scalar()
+        _count = _dbss.query(func.count(ArticleCatalog.id)).filter(ArticleCatalog.name==_name)\
+                                                           .filter(ArticleCatalog.owner_id==_owner_id).scalar()
         
         if _count > 0:
             raise InvalidOperationException('已经存在同名的分类目录！')
         else:
+            _new_catalog = ArticleCatalog(name=_name, owner_id=_owner_id)
             _dbss.add(_new_catalog)
             _dbss.flush()
     
@@ -210,12 +217,15 @@ def create_catalog():
 
 
 @mod.route('/catalog/edit/', methods=['POST'])
+@normal_user_permission.require()
 @template()
 def edit_catalog():
-    _id, _name = request.form['id'], request.form['name']    
+    _id, _name = request.form['catalog_id'], request.form['catalog_name']
+    _owner_id = _get_current_user_id()
         
     with get_scoped_db_session() as _dbss:
-        _count = _dbss.query(func.count(ArticleCatalog.id)).filter(ArticleCatalog=_name).scalar()
+        _count = _dbss.query(func.count(ArticleCatalog.id)).filter(ArticleCatalog.name==_name)\
+                                                           .filter(ArticleCatalog.owner_id==_owner_id).scalar()
         
         if _count > 0:
             raise InvalidOperationException('已经存在同名的分类目录！')
@@ -226,14 +236,21 @@ def edit_catalog():
 
 
 @mod.route('/catalog/delete/', methods=['POST'])
+@normal_user_permission.require()
 @template()
 def delete_catalog():
-    _id = request.form['id']
+    _id = request.form['catalog_id']
+    _owner_id = _get_current_user_id()
     
     with get_scoped_db_session() as _dbss:
+        _catalog = _dbss.query(ArticleCatalog).get(_id)
+        
+        if _catalog.owner_id != _owner_id:
+            raise InvalidOperationException('不能删除他人的分类目录！')
+        
         _dbss.execute(association_table_catalog_article.delete()
                                                        .where(association_table_catalog_article.c.catalog_id==_id))  # @UndefinedVariable
-        _dbss.query(ArticleCatalog).filter_by(id=_id).delete()
+        _dbss.delete(_catalog)
     
         return {'_result': True, }
 
