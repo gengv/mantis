@@ -50,7 +50,14 @@
 			<textarea name="digest" rows="4" cols="60" class="form-control" placeholder="摘要">{% if article %}{{article.digest}}{% endif %}</textarea>
 		</div>
 		
-		<button type="submit" class="btn btn-primary">保存</button>
+		<button type="submit" class="btn btn-success">
+			{% if article %}
+				保存修改
+			{% else %}
+				发表文章
+			{% endif %}
+		</button>
+		<a href="javascript:history.go(-1);" class="btn btn-link">取消</a>
 	</form>
 		
 	

@@ -91,7 +91,11 @@
 		{% endblock %}
 		
 		{% block sidebar %}
-		<div class="col-md-3">
+		<div class="col-md-3 gv-side-bar">
+			<a href="{{url_for('admin.create_article')}}" class="btn btn-primary btn-block">
+				<span class="glyphicon glyphicon-file"> 撰写新文章</span>
+			</a>
+		
 			<ul class="nav nav-pills nav-stacked gv-catalog-list">
 				<li class="nav-header">
 					文章分类
@@ -270,21 +274,30 @@
 				</li>
 			</ul>
 				
-			<ul class="nav nav-list">
+			<ul class="nav nav-list gv-latest-article-list">
 				<li class="nav-header">
 					最新文章
 				</li>
-				<li>
-					<a href="#">资料</a>
+				<li class='hidden gv-latest-article-block gv-latest-article-block-template'>
+					<a href=""></a>
 				</li>
-				<li>
-					<a href="#">设置</a>
-				</li>
-				<li class="divider">
-				</li>
-				<li>
-					<a href="#">帮助</a>
-				</li>
+				
+				<script>
+					$(function() {
+						$.getJSON("{{url_for('.list_latest_articles_by_author', _author_id=author_id)}}", function(data) {
+							if(data) {
+								var article_list_obj = $(".gv-latest-article-list");
+								
+								for(var i=0; i<data.length; i++ ) {
+									var article_obj = $(".gv-latest-article-block-template").clone().removeClass("hidden gv-latest-article-block-template");
+									var link_obj = article_obj.find("a");
+									link_obj.text(data[i]["title"]).attr("href", "/blog/article/"+data[i]["id"]);
+									article_obj.appendTo(article_list_obj);
+								}
+							}
+						});
+					});
+				</script>
 			</ul>
 		</div>
 		{% endblock %}

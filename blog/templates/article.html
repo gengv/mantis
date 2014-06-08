@@ -37,7 +37,7 @@
 	</div>
 	
 	<div class="gv-article-replies-container">
-		<div class="gv-article-reply template">
+		<div class="gv-article-reply gv-article-reply-template">
 			<div class="hidden gv-reply-id"></div>
 			<div class="media">
 				<a class="pull-left" href="#"> 
@@ -57,11 +57,11 @@
 		</div>
 	</div>
 	
-	<button type="button" class="btn btn-default gv-load-replies-button">点击载入更早之前的回复</button>
+	<button type="button" class="btn btn-default gv-load-replies-button">查看更早之前的评论</button>
 	
 	<div class="gv-submit-reply-panel">
 		{% if session._user %}
-			<textarea class="form-control gv-submit-reply-content" rows="3"></textarea><br/>
+			<textarea class="form-control gv-submit-reply-content" rows="3" placeholder="请输入评论内容"></textarea><br/>
 			<button type="button" class="btn btn-default gv-submit-reply-button">发表评论</button>
 		{% else %}
 			<a href="{{url_for('security.login_form')}}">请先登录，再发表评论</a>
@@ -83,7 +83,7 @@
 						var replies_container= $(".gv-article-replies-container");
 						for(var i=0; i<data.length; i++) {
 							var _r = data[i];
-							var new_reply = $(".gv-article-reply.template").clone().removeClass("template");
+							var new_reply = $(".gv-article-reply.gv-article-reply-template").clone().removeClass("gv-article-reply-template");
 							new_reply.find(".gv-reply-id").text(_r['ArticleReply']['id']);
 							new_reply.find(".gv-reply-author-name").text(_r['author_name']);
 							new_reply.find(".gv-reply-published-datetime").text(_r['ArticleReply']['published_datetime']);
@@ -96,28 +96,33 @@
 		
 		function submit_reply() {
 			var content = $(".gv-submit-reply-content").val().trim();
-			var args = {
-				"_article_id": {{ article.id }},
-				"_content": content
-			};
 			
-			$.post("{{url_for('.create_reply')}}", args,
-					function(data) {
-						var replies_container= $(".gv-article-replies-container");
-						if(data) {
-							var r_id = data["reply_id"];
-							
-							var new_reply = $(".gv-article-reply.template").clone().removeClass("template");
-							new_reply.find(".gv-reply-id").text(data["reply_id"]);
-							new_reply.find(".gv-reply-author-name").text("我");
-							new_reply.find(".gv-reply-published-datetime").text(data["published_datetime"]);
-							new_reply.find(".gv-reply-content").text(content);
-							//new_reply.find(".gv-reply-author-icon").attr("alt", _r['author_id']);
-							replies_container.prepend(new_reply);
-							
-							$(".gv-submit-reply-content").val("");
-						}
-					}, "json");
+			if(content && content!="") {
+				var args = {
+					"_article_id": {{ article.id }},
+					"_content": content
+				};
+				
+				$.post("{{url_for('.create_reply')}}", args,
+						function(data) {
+							var replies_container= $(".gv-article-replies-container");
+							if(data) {
+								var r_id = data["reply_id"];
+								
+								var new_reply = $(".gv-article-reply.gv-article-reply-template").clone().removeClass("gv-article-reply-template");
+								new_reply.find(".gv-reply-id").text(data["reply_id"]);
+								new_reply.find(".gv-reply-author-name").text("我");
+								new_reply.find(".gv-reply-published-datetime").text(data["published_datetime"]);
+								new_reply.find(".gv-reply-content").text(content);
+								//new_reply.find(".gv-reply-author-icon").attr("alt", _r['author_id']);
+								replies_container.prepend(new_reply);
+								
+								$(".gv-submit-reply-content").val("");
+							}
+						}, "json");
+			} else {
+				alert("请输入评论内容！");
+			}
 		}
 		
 		function delete_reply(reply_block) {
@@ -155,22 +160,20 @@
 				var ref_id = last_reply_on_page.find(".gv-reply-id").text().trim();
 				
 				load_replies(ref_datetime, ref_id);
+				$(this).blur();
 			});
 			
 			$(".gv-submit-reply-button").click(function() {
 				submit_reply();
+				$(this).blur();
 			});
 			
 			$(window).load(function() {			
 				load_replies();
 			});
 			
-			
-			
 		});
 	
-		
-		
 		
 	</script>
 </div>

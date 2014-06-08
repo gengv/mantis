@@ -14,8 +14,11 @@
 	word-break: break-all;
 }
 
+.gv-submit-reply-panel {
+	margin: 45px 0;
+}
 
-.gv-article-reply.template {
+.gv-article-reply-template {
 	display: none;
 }
 
@@ -27,4 +30,8 @@
 
 .gv-article-reply .gv-reply-delete-button {
 	font-size: 12px;
+}
+
+.gv-load-replies-button {
+	margin: 20px 0;
 }

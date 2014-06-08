@@ -25,6 +25,7 @@ def sa_obj_to_dict(obj, exclude_fields=[]):
         _list = []
         for _item in obj:
             _list.append(sa_obj_to_dict(_item, exclude_fields))
+            
         return _list
     
     elif isinstance(obj, datetime.datetime):

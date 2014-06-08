@@ -4,14 +4,14 @@ from flask.blueprints import Blueprint
 from flask.globals import request, session
 from intercepter import template
 from model import Article, ArticleCatalog, ArticleReply, User
+from security import _get_current_user_id
 from security.permissions import normal_user_permission
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import joinedload, load_only
 from sqlalchemy.sql.expression import desc
 from sqlalchemy.sql.functions import func
 import datetime
 import math
 import re
-from security import _get_current_user_id
 
 mod = Blueprint('blog', __name__, static_folder='static', template_folder='templates')
 
@@ -98,7 +98,7 @@ def _list_articles_basic(_author_id, _catalog_id=None, _offset=1, _size=10):
         else:
             _query = _dbss.query(Article).filter_by(author_id=_author_id)
             
-        _articles = _query.order_by(Article.published_datetime)[_offset:_offset+_size]
+        _articles = _query.order_by(desc(Article.published_datetime), desc(Article.id))[_offset:_offset+_size]
         return _articles
     
     
@@ -110,6 +110,17 @@ def _remove_page_from_url(_url):
         return _m.group(1)
     else:
         return _url
+    
+    
+@mod.route('/blog/<int:_author_id>/latest_articles/')
+@template()
+def list_latest_articles_by_author(_author_id):
+    with get_scoped_db_session() as _dbss:
+        _articles = _dbss.query(Article.id, Article.title)\
+                                        .filter(Article.author_id==_author_id)\
+                                        .order_by(desc(Article.published_datetime))[:10]
+        
+        return _articles
  
 
 @mod.route('/article/<int:_article_id>')
