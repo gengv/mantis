@@ -85,11 +85,11 @@
 				var button = $(this);
 				
 				if(button.is(".gv-edit-article-button")) {
-					window.location.href = "/admin/article/edit/" + article_id;
+					window.location.href = "/blog/article/edit/" + article_id;
 					
 				} else if(button.is(".gv-delete-article-button")) {
 					if(window.confirm("确定要删除这篇文章？")) {
-						$.post("{{url_for('admin.delete_article')}}",
+						$.post("{{url_for('.delete_article')}}",
 								{"article_id": article_id},
 								function(data) {
 									if(data["_result"]) {

@@ -10,7 +10,7 @@
 	</ol>
 	
 	{% if editable %}
-		<a href="{{url_for('admin.edit_article', _article_id=article.id)}}">编辑</a>
+		<a href="{{url_for('.edit_article', _article_id=article.id)}}">编辑</a>
 	{% endif %}
 	
 	<h3 class="gv-article-title">
@@ -128,7 +128,7 @@
 		function delete_reply(reply_block) {
 			var reply_id = $.trim(reply_block.find(".gv-reply-id").text());	
 			
-			$.post("{{url_for('admin.delete_reply')}}", 
+			$.post("{{url_for('.delete_reply')}}", 
 					{"reply_id": reply_id},
 					function(data) {
 						if(data["_result"]) {
@@ -154,7 +154,7 @@
 			});
 			
 			$(".gv-load-replies-button").click(function() {
-				var last_reply_on_page = $(".gv-article-replies-container .gv-article-reply").last();
+				var last_reply_on_page = $(".gv-article-replies-container .gv-article-reply").not(".gv-article-reply-template").last();
 				
 				var ref_datetime = last_reply_on_page.find(".gv-reply-published-datetime").text().trim();
 				var ref_id = last_reply_on_page.find(".gv-reply-id").text().trim();

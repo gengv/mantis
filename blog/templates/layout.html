@@ -92,7 +92,7 @@
 		
 		{% block sidebar %}
 		<div class="col-md-3 gv-side-bar">
-			<a href="{{url_for('admin.create_article')}}" class="btn btn-primary btn-block">
+			<a href="{{url_for('.create_article')}}" class="btn btn-primary btn-block">
 				<span class="glyphicon glyphicon-file"> 撰写新文章</span>
 			</a>
 		
@@ -149,7 +149,7 @@
 				
 				{% if editable %}
 				<li class="gv-catalog-controls">
-					<form action="{{url_for('admin.create_catalog')}}" method="post"
+					<form action="{{url_for('.create_catalog')}}" method="post"
 						  class="form-inline gv-add-catalog-form" role="form">
 						<div class="form-group">
 							<input type="text" name="catalog_name" class="form-control" placeholder="新分类目录名" value=""/>
@@ -169,7 +169,7 @@
 							var catalog_name = input_obj.val().trim();
 							
 							if(catalog_name != "") {
-								$.post("{{url_for('admin.create_catalog')}}",
+								$.post("{{url_for('.create_catalog')}}",
 										{"catalog_name": catalog_name},
 									   	function(data) {
 											if(data["_result"]) {
@@ -224,7 +224,7 @@
 									button.siblings(".gv-edit-catalog-button, .gv-delete-catalog-button").show();
 									
 								} else {
-									$.post("{{url_for('admin.edit_catalog')}}", 
+									$.post("{{url_for('.edit_catalog')}}", 
 											{"catalog_id": catalog_id, "catalog_name": new_name},
 											function(data) {
 												if(data["_result"]) {
@@ -250,7 +250,7 @@
 								
 							} else if(button.is(".gv-delete-catalog-button")) {
 								if(window.confirm("确认要删除分类目录<" + link_obj.text().trim() + ">?")) {
-									$.post("{{url_for('admin.delete_catalog')}}", 
+									$.post("{{url_for('.delete_catalog')}}", 
 											{"catalog_id": catalog_id}, 
 											function(data) {
 												if(data["_result"]) {
@@ -284,7 +284,7 @@
 				
 				<script>
 					$(function() {
-						$.getJSON("{{url_for('.list_latest_articles_by_author', _author_id=author_id)}}", function(data) {
+						$.getJSON("{{url_for('blog.list_latest_articles_by_author', _author_id=author_id)}}", function(data) {
 							if(data) {
 								var article_list_obj = $(".gv-latest-article-list");
 								

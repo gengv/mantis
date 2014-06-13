@@ -29,7 +29,7 @@ def on_identity_loaded(sender, identity):
 
 # 设置Blueprint
 app.register_blueprint(blog.mod, url_prefix='/blog')
-app.register_blueprint(admin.mod, url_prefix='/admin')
+# app.register_blueprint(admin.mod, url_prefix='/admin')
 app.register_blueprint(security.mod, url_prefix='/security')
 
 
