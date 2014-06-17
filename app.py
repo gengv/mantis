@@ -2,7 +2,7 @@
 from flask.app import Flask
 from flask.globals import session
 from flask_principal import Principal, identity_loaded, UserNeed, RoleNeed
-import admin
+import public
 import blog
 import security
 
@@ -31,7 +31,7 @@ def on_identity_loaded(sender, identity):
 app.register_blueprint(blog.mod, url_prefix='/blog')
 # app.register_blueprint(admin.mod, url_prefix='/admin')
 app.register_blueprint(security.mod, url_prefix='/security')
-
+app.register_blueprint(public.mod, url_prefix='/public')
 
 @app.teardown_appcontext
 def shutdown_db_session(exception=None):
