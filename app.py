@@ -3,7 +3,7 @@ from flask.app import Flask
 from flask.globals import session
 from flask_principal import Principal, identity_loaded, UserNeed, RoleNeed
 import public
-import blog
+import blog, blog.ue_controller
 import security
 
 
@@ -29,6 +29,8 @@ def on_identity_loaded(sender, identity):
 
 # 设置Blueprint
 app.register_blueprint(blog.mod, url_prefix='/blog')
+# from blog.ue_controller import mod as uem
+app.register_blueprint(blog.ue_controller.mod, url_prefix='/blog/ue')
 # app.register_blueprint(admin.mod, url_prefix='/admin')
 app.register_blueprint(security.mod, url_prefix='/security')
 app.register_blueprint(public.mod, url_prefix='/public')
