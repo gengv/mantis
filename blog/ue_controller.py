@@ -20,7 +20,7 @@ def ue_control():
     if _action == 'config':
         return _parse_ue_config_json()
     
-    elif _action == 'uploadimage':
+    elif _action in ['uploadimage', 'uploadfile', 'uploadvideo']:
         _file = request.files.get('upfile')
         _file_path = _save_uploaded_file(_file)
          
@@ -31,16 +31,6 @@ def ue_control():
                 'original': _file.filename,
                 }
         
-    elif _action == 'uploadfile':
-        _file = request.files.get('upfile')
-        _file.save(r'D:/test/%s' % random.randint(1000, 9999))
-         
-        return {
-                'state': 'SUCCESS',
-                'url': 'test-url',
-                'title': 'test-title',
-                'original': 'test-original',
-                }
         
     
 
