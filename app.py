@@ -5,6 +5,7 @@ from flask_principal import Principal, identity_loaded, UserNeed, RoleNeed
 import public
 import blog, blog.ue_controller
 import security
+import file_storage
 
 
 app = Flask(__name__)
@@ -34,6 +35,7 @@ app.register_blueprint(blog.ue_controller.mod, url_prefix='/blog/ue')
 # app.register_blueprint(admin.mod, url_prefix='/admin')
 app.register_blueprint(security.mod, url_prefix='/security')
 app.register_blueprint(public.mod, url_prefix='/public')
+app.register_blueprint(file_storage.mod, url_prefix='/file_storage')
 
 @app.teardown_appcontext
 def shutdown_db_session(exception=None):
