@@ -2,8 +2,6 @@
 
 {% block main_content %}
 <div class="col-md-9">
-	<link rel="stylesheet" href="{{url_for('.static', filename='article.css')}}">
-
 	<ol class="breadcrumb">
 		<li><a href="#">所有文章</a></li>
 		<li class="active">
@@ -15,7 +13,7 @@
 		</li>
 	</ol>
 	
-	<form action="{{url_for('.save_article')}}" method="post" role="form">
+	<form action="{{url_for('.save_article')}}" method="post" role="form" class="gv-article-edit-form">
 		<input type="hidden" name="id" value="{% if article %}{{article.id}}{% endif %}"/>
 	
 		<div class="form-group">
@@ -42,33 +40,44 @@
 		
 		<div class="form-group">
 			<label class="control-label">内容</label>
-			<textarea name="content" rows="30" cols="60" class="form-control" placeholder="内容">{% if article %}{{article.content.content}}{% endif %}</textarea>
+			<input type="hidden" value="" id="gv-article-content"/>
+			<!-- <textarea name="content" rows="30" cols="60" class="form-control" placeholder="内容">{% if article %}{{article.content.content}}{% endif %}</textarea> -->
+			<!-- 加载编辑器的容器 -->
+			<script id="container" name="content" type="text/plain" style="height: 350px;"></script>
+			<!-- 配置文件 -->
+			<script type="text/javascript" src="{{url_for('public.static', filename='ue/ueditor.config.js')}}"></script>
+			<!-- 编辑器源码文件 -->
+			<script type="text/javascript" src="{{url_for('public.static', filename='ue/ueditor.all.js')}}"></script>
+			<!-- 实例化编辑器 -->
+			<script type="text/javascript">
+				var article_content_editor = UE.getEditor("container");
+			</script>
 		</div>
-
-		<!-- 加载编辑器的容器 -->
-		<script id="container" name="content" type="text/plain"></script>
-		<!-- 配置文件 -->
-		<script type="text/javascript" src="{{url_for('public.static', filename='ue/ueditor.config.js')}}"></script>
-		<!-- 编辑器源码文件 -->
-		<script type="text/javascript" src="{{url_for('public.static', filename='ue/ueditor.all.js')}}"></script>
-		<!-- 实例化编辑器 -->
-		<script type="text/javascript">
-			var ue = UE.getEditor("container");
-			
-		</script>
 
 		<div class="form-group">
 			<label class="control-label">摘要</label>
 			<textarea name="digest" rows="4" cols="60" class="form-control" placeholder="摘要">{% if article %}{{article.digest}}{% endif %}</textarea>
 		</div>
 		
-		<button type="submit" class="btn btn-success">
+		<button class="btn btn-success gv-article-edit-submit-button">
 			{% if article %}
 				保存修改
 			{% else %}
 				发表文章
 			{% endif %}
 		</button>
+		<script>
+			$(function() {
+				var article_content = article_content_editor.getContent();
+				
+				var form_obj = $(".gv-article-edit-form");
+				
+				$(".gv-article-edit-submit-button").click(function(event) {
+					$("#gv-article-content").val(article_content);
+					form_obj.submit();
+				});
+			});
+		</script>
 		<a href="javascript:history.go(-1);" class="btn btn-link">取消</a>
 	</form>
 		

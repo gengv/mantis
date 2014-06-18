@@ -29,7 +29,9 @@
 	</div>
 	
 	<div class="gv-article-content">
-		{{article.content.content}}
+		{% autoescape false %}
+			{{article.content.content}}
+		{% endautoescape %}
 	</div>
 	
 	<div class="gv-article-last-modified-datetime">
@@ -175,6 +177,15 @@
 		});
 	
 		
+	</script>
+	
+	<!-- UEditor解析文件 -->
+	<script type="text/javascript" src="{{url_for('public.static', filename='ue/ueditor.parse.js')}}"></script>
+	<script>
+		/* uParse(".gv-article-content", {rootPath: "/public/static/ue/"}); */
+		$(document).ready(function() {
+			uParse(".gv-article-content", {rootPath: "/public/static/ue"});
+		});
 	</script>
 </div>
 {% endblock %}

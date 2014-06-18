@@ -2272,7 +2272,7 @@ if (typeof(SyntaxHighlighter) == 'undefined') var SyntaxHighlighter = function()
                     + '<tr>'
                     + (gutter ? '<td class="gutter">' + this.getLineNumbersHtml(code) + '</td>' : '')
                     + '<td class="code">'
-                    + '<div class="container">'
+                    + '<div class="container2">'
                     + html
                     + '</div>'
                     + '</td>'
