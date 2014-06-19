@@ -40,10 +40,10 @@
 		
 		<div class="form-group">
 			<label class="control-label">内容</label>
-			<input type="hidden" value="" id="gv-article-content"/>
+			<input type="hidden" value="{% if article %}{{article.content.content}}{% endif %}" id="gv-article-content"/>
 			<!-- <textarea name="content" rows="30" cols="60" class="form-control" placeholder="内容">{% if article %}{{article.content.content}}{% endif %}</textarea> -->
 			<!-- 加载编辑器的容器 -->
-			<script id="container" name="content" type="text/plain" style="height: 350px;"></script>
+			<script id="container" name="content" type="text/plain" style="height: 350px;">{% if article %}{% autoescape false %}{{article.content.content}}{% endautoescape %}{% endif %}</script>
 			<!-- 配置文件 -->
 			<script type="text/javascript" src="{{url_for('public.static', filename='ue/ueditor.config.js')}}"></script>
 			<!-- 编辑器源码文件 -->
